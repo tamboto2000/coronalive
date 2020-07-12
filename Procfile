@@ -1,1 +1,1 @@
-web: bin/covidlive
+web: bin/coronalive
