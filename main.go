@@ -4,10 +4,12 @@ import (
 	"coronalive/routes"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 )
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	log.Fatal(http.ListenAndServe(":8000", routes.Router))
+	port := os.Getenv("PORT")
+	log.Fatal(http.ListenAndServe(":"+port, routes.Router))
 }
