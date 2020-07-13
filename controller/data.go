@@ -32,5 +32,6 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.COVIDData = covidData
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
 }
