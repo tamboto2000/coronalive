@@ -1,11 +1,12 @@
 package main
 
 import (
-	"coronalive/routes"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
+
+	"github.com/tamboto2000/coronalive/routes"
 
 	"github.com/gorilla/handlers"
 )

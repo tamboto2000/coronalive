@@ -1,9 +1,10 @@
 package controller
 
 import (
-	"coronalive/services/scrapper"
 	"encoding/json"
 	"net/http"
+
+	"github.com/tamboto2000/coronalive/services/scrapper"
 )
 
 type Data struct {
