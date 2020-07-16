@@ -1,4 +1,4 @@
-module coronalive
+module github.com/tamboto2000/coronalive
 
 go 1.14
 
