@@ -1,4 +1,4 @@
-package scrapper
+package raw
 
 type DataFromDataJSON struct {
 	LastUpdate string    `json:"last_update"`

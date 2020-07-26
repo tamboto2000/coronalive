@@ -3,8 +3,11 @@ package scrapper
 import (
 	"math"
 	"time"
+
+	rawStruct "github.com/tamboto2000/coronalive/services/scrapper/raw"
 )
 
+//COVIDData adalah kumpulan semua data yang disatukan dalam satu object
 type COVIDData struct {
 	NationalSummary         Item                      `json:"nationalSummary"`
 	ByDateNational          []ByDate                  `json:"byDateNational"`
@@ -15,6 +18,7 @@ type COVIDData struct {
 	ByAccompanyingCondition []ByAccompanyingCondition `json:"byAccompanyingCondition"`
 }
 
+//ByDate data berdasarkan tanggal
 type ByDate struct {
 	Year  int `json:"year"`
 	Month int `json:"month"`
@@ -22,6 +26,7 @@ type ByDate struct {
 	Item
 }
 
+//ByProvince data berdasarkan provinsi
 type ByProvince struct {
 	Province string     `json:"province"`
 	ByGender []ByGender `json:"byGender"`
@@ -29,36 +34,50 @@ type ByProvince struct {
 	Item
 }
 
+//ByGender data berdasarkan jenis kelamin
 type ByGender struct {
 	Gender string `json:"gender"` //MALE,FEMALE
 	Item
 }
 
+//ByAge data berdasarkan umur
 type ByAge struct {
 	From int `json:"from"`
 	To   int `json:"to"`
 	Item
 }
 
+//BySimptom data berdasarkan gejala yang ditunjukan pasien
 type BySimptom struct {
+	//gejala
 	Simptom string `json:"simptom"`
 	Item
 }
 
+//ByAccompanyingCondition data berdasarkan kondisi kesehatan yang diderita pasien
 type ByAccompanyingCondition struct {
 	Condition string `json:"condition"`
 	Item
 }
 
+//Item adalah data dasar
 type Item struct {
-	Positive          int `json:"positive,omitempty"`
-	InCare            int `json:"inCare,omitempty"`
-	Recovered         int `json:"recovered,omitempty"`
-	Died              int `json:"died,omitempty"`
-	InMonitoring      int `json:"inMonitoring,omitempty"`      //ODP
+	//positif/terkonfirmasi
+	Positive int `json:"positive,omitempty"`
+	//dalam perawatan
+	InCare int `json:"inCare,omitempty"`
+	//sembuh
+	Recovered int `json:"recovered,omitempty"`
+	//meninggal
+	Died int `json:"died,omitempty"`
+	//orang dalam pengawasan
+	InMonitoring int `json:"inMonitoring,omitempty"` //ODP
+	//pasien dalam pengawasan
 	UnderSurveillance int `json:"underSurveillance,omitempty"` //PDP
-	Specimen          int `json:"specimen,omitempty"`
-	NegativeSpecimen  int `json:"negativeSpecimen,omitempty"`
+	//total spesimen
+	Specimen int `json:"specimen,omitempty"`
+	//spesimen negatif
+	NegativeSpecimen int `json:"negativeSpecimen,omitempty"`
 }
 
 const (
@@ -66,7 +85,7 @@ const (
 	genderFemale = "FEMALE"
 )
 
-func fromUpdateJSON(result *COVIDData, raw *DataFromUpdateJSON) {
+func fromUpdateJSON(result *COVIDData, raw *rawStruct.DataFromUpdateJSON) {
 	//extract national summary data
 	result.NationalSummary.Positive = raw.Update.Total.JumlahPositif
 	result.NationalSummary.InCare = raw.Update.Total.JumlahDirawat
@@ -94,7 +113,7 @@ func fromUpdateJSON(result *COVIDData, raw *DataFromUpdateJSON) {
 	}
 }
 
-func fromProvJSON(result *COVIDData, raw *DataFromProvJSON) {
+func fromProvJSON(result *COVIDData, raw *rawStruct.DataFromProvJSON) {
 	for _, data := range raw.ListData {
 		result.ByProvince = append(result.ByProvince, ByProvince{
 			Province: data.Key,
@@ -173,7 +192,7 @@ func fromProvJSON(result *COVIDData, raw *DataFromProvJSON) {
 	}
 }
 
-func fromDataJSON(result *COVIDData, raw *DataFromDataJSON) {
+func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//extract data by gender national
 	nationalPositivePercentil := (float64(result.NationalSummary.Positive) / 100)
 	nationalRecovPercentil := (float64(result.NationalSummary.Recovered) / 100)

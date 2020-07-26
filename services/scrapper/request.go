@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+
+	rawStruct "github.com/tamboto2000/coronalive/services/scrapper/raw"
 )
 
 const (
@@ -58,13 +60,13 @@ func requestAPI(file string) ([]byte, error) {
 	return respBody, nil
 }
 
-func requestUpdateJSON() (*DataFromUpdateJSON, error) {
+func requestUpdateJSON() (*rawStruct.DataFromUpdateJSON, error) {
 	raw, err := requestAPI(updateJSON)
 	if err != nil {
 		return nil, err
 	}
 
-	result := new(DataFromUpdateJSON)
+	result := new(rawStruct.DataFromUpdateJSON)
 	if err = json.Unmarshal(raw, result); err != nil {
 		return nil, err
 	}
@@ -72,13 +74,13 @@ func requestUpdateJSON() (*DataFromUpdateJSON, error) {
 	return result, nil
 }
 
-func requestProvJSON() (*DataFromProvJSON, error) {
+func requestProvJSON() (*rawStruct.DataFromProvJSON, error) {
 	raw, err := requestAPI(provJSON)
 	if err != nil {
 		return nil, err
 	}
 
-	result := new(DataFromProvJSON)
+	result := new(rawStruct.DataFromProvJSON)
 	if err = json.Unmarshal(raw, result); err != nil {
 		return nil, err
 	}
@@ -86,13 +88,13 @@ func requestProvJSON() (*DataFromProvJSON, error) {
 	return result, nil
 }
 
-func requestDataJSON() (*DataFromDataJSON, error) {
+func requestDataJSON() (*rawStruct.DataFromDataJSON, error) {
 	raw, err := requestAPI(dataJSON)
 	if err != nil {
 		return nil, err
 	}
 
-	result := new(DataFromDataJSON)
+	result := new(rawStruct.DataFromDataJSON)
 	if err = json.Unmarshal(raw, result); err != nil {
 		return nil, err
 	}
