@@ -77,3 +77,15 @@ func GetAllData() (*COVIDData, []error) {
 
 	return covidData, nil
 }
+
+func GetAllDataByProvince() ([]ByProvince, error) {
+	provJSON, err := requestProvJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	covidData := new(COVIDData)
+	fromProvJSON(covidData, provJSON)
+
+	return covidData.ByProvince, nil
+}
