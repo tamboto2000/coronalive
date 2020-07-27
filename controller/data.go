@@ -65,3 +65,18 @@ func GetByProvince(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(covidData)
 }
+
+func GetNationalSummary(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	nationalSummary, err := scrapper.GetNationalSummary()
+	if err != nil {
+		json.NewEncoder(w).Encode(Error{
+			Code:    500,
+			Message: err.Error(),
+		})
+
+		return
+	}
+
+	json.NewEncoder(w).Encode(nationalSummary)
+}

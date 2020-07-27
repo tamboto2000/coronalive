@@ -89,3 +89,15 @@ func GetAllDataByProvince() ([]ByProvince, error) {
 
 	return covidData.ByProvince, nil
 }
+
+func GetNationalSummary() (*Item, error) {
+	updateJSON, err := requestUpdateJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	covidData := new(COVIDData)
+	fromUpdateJSON(covidData, updateJSON)
+
+	return covidData.NationalSummary, nil
+}

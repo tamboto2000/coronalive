@@ -9,7 +9,7 @@ import (
 
 //COVIDData adalah kumpulan semua data yang disatukan dalam satu object
 type COVIDData struct {
-	NationalSummary         Item                      `json:"nationalSummary"`
+	NationalSummary         *Item                     `json:"nationalSummary"`
 	ByDateNational          []ByDate                  `json:"byDateNational"`
 	ByProvince              []ByProvince              `json:"byProvince"`
 	ByGenderNational        []ByGender                `json:"byGenderNational"`
