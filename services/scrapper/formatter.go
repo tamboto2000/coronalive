@@ -87,14 +87,16 @@ const (
 
 func fromUpdateJSON(result *COVIDData, raw *rawStruct.DataFromUpdateJSON) {
 	//extract national summary data
-	result.NationalSummary.Positive = raw.Update.Total.JumlahPositif
-	result.NationalSummary.InCare = raw.Update.Total.JumlahDirawat
-	result.NationalSummary.Recovered = raw.Update.Total.JumlahSembuh
-	result.NationalSummary.Died = raw.Update.Total.JumlahMeninggal
-	result.NationalSummary.InMonitoring = raw.Data.JumlahOdp
-	result.NationalSummary.UnderSurveillance = raw.Data.JumlahPDP
-	result.NationalSummary.Specimen = raw.Data.TotalSpesimen
-	result.NationalSummary.Specimen = raw.Data.TotalSpesimenNegatif
+	result.NationalSummary = &Item{
+		Positive:          raw.Update.Total.JumlahPositif,
+		InCare:            raw.Update.Total.JumlahDirawat,
+		Recovered:         raw.Update.Total.JumlahSembuh,
+		Died:              raw.Update.Total.JumlahMeninggal,
+		InMonitoring:      raw.Data.JumlahOdp,
+		UnderSurveillance: raw.Data.JumlahPDP,
+		Specimen:          raw.Data.TotalSpesimen,
+		NegativeSpecimen:  raw.Data.TotalSpesimenNegatif,
+	}
 
 	//extract daily national data
 	for _, data := range raw.Update.Harian {
