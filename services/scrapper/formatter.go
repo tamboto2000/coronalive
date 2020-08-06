@@ -9,13 +9,22 @@ import (
 
 //COVIDData adalah kumpulan semua data yang disatukan dalam satu object
 type COVIDData struct {
-	NationalSummary         *Item                     `json:"nationalSummary"`
-	ByDateNational          []ByDate                  `json:"byDateNational"`
-	ByProvince              []ByProvince              `json:"byProvince"`
-	ByGenderNational        []ByGender                `json:"byGenderNational"`
-	ByAgeNational           []ByAge                   `json:"byAgeNational"`
-	BySimptom               []BySimptom               `json:"bySimptom"`
+	//Kasus nasional
+	NationalSummary *Item `json:"nationalSummary"`
+	//Kasus berdasarkan tanggal
+	ByDateNational []ByDate `json:"byDateNational"`
+	//Kasus berdasarkan provinsi
+	ByProvince []ByProvince `json:"byProvince"`
+	//Kasus berdasarkan jenis kelamin nasional
+	ByGenderNational []ByGender `json:"byGenderNational"`
+	//Kasus berdasarkan umur nasional
+	ByAgeNational []ByAge `json:"byAgeNational"`
+	//Kasus berdasarkan gejala
+	BySimptom []BySimptom `json:"bySimptom"`
+	//Kasus berdasarkan kondisi penyerta (komplikasi)
 	ByAccompanyingCondition []ByAccompanyingCondition `json:"byAccompanyingCondition"`
+	//data yang tidak lengkap/tidak ada
+	Loss *Loss `json:"loss"`
 }
 
 //ByDate data berdasarkan tanggal
@@ -71,13 +80,25 @@ type Item struct {
 	//meninggal
 	Died int `json:"died,omitempty"`
 	//orang dalam pengawasan
-	InMonitoring int `json:"inMonitoring,omitempty"` //ODP
+	InMonitoring int `json:"inMonitoring,omitempty"`
 	//pasien dalam pengawasan
-	UnderSurveillance int `json:"underSurveillance,omitempty"` //PDP
+	UnderSurveillance int `json:"underSurveillance,omitempty"`
 	//total spesimen
 	Specimen int `json:"specimen,omitempty"`
 	//spesimen negatif
 	NegativeSpecimen int `json:"negativeSpecimen,omitempty"`
+}
+
+//Loss mendeskripsikan jumlah data yang tidak ada atau tidak lengkap
+type Loss struct {
+	//kondisi penyerta
+	ByAccompanyingCondition int `json:"ByAccompanying"`
+	//jenis kelamin
+	ByGender int `json:"byGender"`
+	//umur
+	ByAge int `json:"byAge"`
+	//gejala
+	BySimptoms int `json:"bySimptom"`
 }
 
 const (
@@ -195,29 +216,38 @@ func fromProvJSON(result *COVIDData, raw *rawStruct.DataFromProvJSON) {
 }
 
 func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
-	//extract data by gender national
-	nationalPositivePercentil := (float64(result.NationalSummary.Positive) / 100)
-	nationalRecovPercentil := (float64(result.NationalSummary.Recovered) / 100)
-	nationalDiedPercentil := (float64(result.NationalSummary.Died) / 100)
-	nationalInCarePercentil := (float64(result.NationalSummary.InCare) / 100)
+	availableAccompanyingConditiondata := float64(raw.Kasus.KondisiPenyerta.CurrentData) / 100
+	availableGenderData := float64(raw.Kasus.JenisKelamin.CurrentData) / 100
+	availableAgeData := float64(raw.Kasus.KelompokUmur.CurrentData) / 100
+	availableSimptomData := float64(raw.Kasus.Gejala.CurrentData) / 100
 
+	nationalPositivePercentile := float64(result.NationalSummary.Positive) / 100
+
+	result.Loss = &Loss{
+		ByAccompanyingCondition: int(math.RoundToEven(nationalPositivePercentile * raw.Kasus.KondisiPenyerta.MissingData)),
+		ByGender:                int(math.RoundToEven(nationalPositivePercentile * raw.Kasus.JenisKelamin.MissingData)),
+		ByAge:                   int(math.RoundToEven(nationalPositivePercentile * raw.Kasus.JenisKelamin.MissingData)),
+		BySimptoms:              int(math.RoundToEven(nationalPositivePercentile * raw.Kasus.Gejala.MissingData)),
+	}
+
+	//extract data by gender national
 	result.ByGenderNational = append(result.ByGenderNational, []ByGender{
 		ByGender{
 			Gender: genderMale,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.JenisKelamin.ListData[0].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.JenisKelamin.ListData[0].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.JenisKelamin.ListData[0].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.JenisKelamin.ListData[0].DocCount)),
+				Positive:  int(math.RoundToEven(availableGenderData * raw.Kasus.JenisKelamin.ListData[0].DocCount)),
+				Recovered: int(math.RoundToEven(availableGenderData * raw.Sembuh.JenisKelamin.ListData[0].DocCount)),
+				Died:      int(math.RoundToEven(availableGenderData * raw.Meninggal.JenisKelamin.ListData[0].DocCount)),
+				InCare:    int(math.RoundToEven(availableGenderData * raw.Perawatan.JenisKelamin.ListData[0].DocCount)),
 			},
 		},
 		ByGender{
 			Gender: genderFemale,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.JenisKelamin.ListData[1].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.JenisKelamin.ListData[1].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.JenisKelamin.ListData[1].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.JenisKelamin.ListData[1].DocCount)),
+				Positive:  int(math.RoundToEven(availableGenderData * raw.Kasus.JenisKelamin.ListData[1].DocCount)),
+				Recovered: int(math.RoundToEven(availableGenderData * raw.Sembuh.JenisKelamin.ListData[1].DocCount)),
+				Died:      int(math.RoundToEven(availableGenderData * raw.Meninggal.JenisKelamin.ListData[1].DocCount)),
+				InCare:    int(math.RoundToEven(availableGenderData * raw.Perawatan.JenisKelamin.ListData[1].DocCount)),
 			},
 		},
 	}...)
@@ -228,10 +258,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 0,
 			To:   5,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[0].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[0].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[0].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[0].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[0].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[0].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[0].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[0].DocCount)),
 			},
 		},
 
@@ -239,10 +269,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 6,
 			To:   17,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[1].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[1].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[1].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[1].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[1].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[1].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[1].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[1].DocCount)),
 			},
 		},
 
@@ -250,10 +280,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 18,
 			To:   30,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[2].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[2].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[2].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[2].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[2].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[2].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[2].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[2].DocCount)),
 			},
 		},
 
@@ -261,10 +291,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 31,
 			To:   45,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[3].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[3].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[3].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[3].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[3].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[3].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[3].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[3].DocCount)),
 			},
 		},
 
@@ -272,10 +302,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 46,
 			To:   59,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[4].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[4].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[4].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[4].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[4].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[4].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[4].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[4].DocCount)),
 			},
 		},
 
@@ -283,10 +313,10 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 			From: 60,
 			To:   0,
 			Item: Item{
-				Positive:  int(math.RoundToEven(nationalPositivePercentil * raw.Kasus.KelompokUmur.ListData[5].DocCount)),
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * raw.Sembuh.KelompokUmur.ListData[5].DocCount)),
-				Died:      int(math.RoundToEven(nationalDiedPercentil * raw.Meninggal.KelompokUmur.ListData[5].DocCount)),
-				InCare:    int(math.RoundToEven(nationalInCarePercentil * raw.Perawatan.KelompokUmur.ListData[5].DocCount)),
+				Positive:  int(math.RoundToEven(availableAgeData * raw.Kasus.KelompokUmur.ListData[5].DocCount)),
+				Recovered: int(math.RoundToEven(availableAgeData * raw.Sembuh.KelompokUmur.ListData[5].DocCount)),
+				Died:      int(math.RoundToEven(availableAgeData * raw.Meninggal.KelompokUmur.ListData[5].DocCount)),
+				InCare:    int(math.RoundToEven(availableAgeData * raw.Perawatan.KelompokUmur.ListData[5].DocCount)),
 			},
 		},
 	}...)
@@ -298,7 +328,7 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 		bySimptom[data.Key] = &BySimptom{
 			Simptom: data.Key,
 			Item: Item{
-				Positive: int(math.RoundToEven(nationalPositivePercentil * data.DocCount)),
+				Positive: int(math.RoundToEven(availableSimptomData * data.DocCount)),
 			},
 		}
 	}
@@ -306,14 +336,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate recovered data
 	for _, data := range raw.Sembuh.Gejala.ListData {
 		if val, ok := bySimptom[data.Key]; ok {
-			val.Item.Recovered = int(math.RoundToEven(nationalRecovPercentil * data.DocCount))
+			val.Item.Recovered = int(math.RoundToEven(availableSimptomData * data.DocCount))
 			continue
 		}
 
 		bySimptom[data.Key] = &BySimptom{
 			Simptom: data.Key,
 			Item: Item{
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * data.DocCount)),
+				Recovered: int(math.RoundToEven(availableSimptomData * data.DocCount)),
 			},
 		}
 	}
@@ -321,14 +351,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate died data
 	for _, data := range raw.Meninggal.Gejala.ListData {
 		if val, ok := bySimptom[data.Key]; ok {
-			val.Item.Died = int(math.RoundToEven(nationalDiedPercentil * data.DocCount))
+			val.Item.Died = int(math.RoundToEven(availableSimptomData * data.DocCount))
 			continue
 		}
 
 		bySimptom[data.Key] = &BySimptom{
 			Simptom: data.Key,
 			Item: Item{
-				Died: int(math.RoundToEven(nationalDiedPercentil * data.DocCount)),
+				Died: int(math.RoundToEven(availableSimptomData * data.DocCount)),
 			},
 		}
 	}
@@ -336,14 +366,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate in care data
 	for _, data := range raw.Perawatan.Gejala.ListData {
 		if val, ok := bySimptom[data.Key]; ok {
-			val.Item.InCare = int(math.RoundToEven(nationalInCarePercentil * data.DocCount))
+			val.Item.InCare = int(math.RoundToEven(availableSimptomData * data.DocCount))
 			continue
 		}
 
 		bySimptom[data.Key] = &BySimptom{
 			Simptom: data.Key,
 			Item: Item{
-				InCare: int(math.RoundToEven(nationalInCarePercentil * data.DocCount)),
+				InCare: int(math.RoundToEven(availableSimptomData * data.DocCount)),
 			},
 		}
 	}
@@ -360,7 +390,7 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 		byCondition[data.Key] = &ByAccompanyingCondition{
 			Condition: data.Key,
 			Item: Item{
-				Positive: int(math.RoundToEven(nationalPositivePercentil * data.DocCount)),
+				Positive: int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount)),
 			},
 		}
 	}
@@ -368,14 +398,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate recovered data
 	for _, data := range raw.Sembuh.KondisiPenyerta.ListData {
 		if val, ok := byCondition[data.Key]; ok {
-			val.Item.Recovered = int(math.RoundToEven(nationalRecovPercentil * data.DocCount))
+			val.Item.Recovered = int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount))
 			continue
 		}
 
 		byCondition[data.Key] = &ByAccompanyingCondition{
 			Condition: data.Key,
 			Item: Item{
-				Recovered: int(math.RoundToEven(nationalRecovPercentil * data.DocCount)),
+				Recovered: int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount)),
 			},
 		}
 	}
@@ -383,14 +413,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate died data
 	for _, data := range raw.Meninggal.KondisiPenyerta.ListData {
 		if val, ok := byCondition[data.Key]; ok {
-			val.Item.Died = int(math.RoundToEven(nationalDiedPercentil * data.DocCount))
+			val.Item.Died = int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount))
 			continue
 		}
 
 		byCondition[data.Key] = &ByAccompanyingCondition{
 			Condition: data.Key,
 			Item: Item{
-				Died: int(math.RoundToEven(nationalDiedPercentil * data.DocCount)),
+				Died: int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount)),
 			},
 		}
 	}
@@ -398,14 +428,14 @@ func fromDataJSON(result *COVIDData, raw *rawStruct.DataFromDataJSON) {
 	//iterate in care data
 	for _, data := range raw.Perawatan.KondisiPenyerta.ListData {
 		if val, ok := byCondition[data.Key]; ok {
-			val.Item.InCare = int(math.RoundToEven(nationalInCarePercentil * data.DocCount))
+			val.Item.InCare = int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount))
 			continue
 		}
 
 		byCondition[data.Key] = &ByAccompanyingCondition{
 			Condition: data.Key,
 			Item: Item{
-				InCare: int(math.RoundToEven(nationalInCarePercentil * data.DocCount)),
+				InCare: int(math.RoundToEven(availableAccompanyingConditiondata * data.DocCount)),
 			},
 		}
 	}

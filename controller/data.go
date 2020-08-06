@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tamboto2000/coronalive/services/scrapper"
+	scrapper "github.com/tamboto2000/coronalive/services/scrapper"
 )
 
 type Data struct {
@@ -18,6 +18,8 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+//GetAll menampilkan semua data
+//path: /getAll
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var data Data
@@ -38,6 +40,9 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(data)
 }
 
+//GetByProvince menampilkan data berdasarkan provinsi
+//path: /getAllByProvince
+//query: prov (string)
 func GetByProvince(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	covidData, err := scrapper.GetAllDataByProvince()
@@ -59,13 +64,15 @@ func GetByProvince(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		w.Write([]byte("[]"))
+		json.NewEncoder(w).Encode(covidData)
 		return
 	}
 
 	json.NewEncoder(w).Encode(covidData)
 }
 
+//GetNationalSummary menampilkan rangkuman data nasional
+//path: /getNationalSummary
 func GetNationalSummary(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	nationalSummary, err := scrapper.GetNationalSummary()
